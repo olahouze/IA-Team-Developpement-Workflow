@@ -1,0 +1,63 @@
+version: '3.8'
+
+x-windmill-env: &windmill-env
+  DATABASE_URL: postgres://windmill:windmill_password@db:5432/windmill?sslmode=disable
+  MODE: ${WINDMILL_MODE:-server} # Par défaut, le mode serveur est utilisé s'il n'est pas spécifié, mais on l'écrase dans les services
+
+services:
+  db:
+    image: postgres:15
+    container_name: windmill_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: windmill
+      POSTGRES_PASSWORD: windmill_password
+      POSTGRES_DB: windmill
+    volumes:
+      - windmill_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U windmill -d windmill"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  windmill_server:
+    image: ghcr.io/windmill-labs/windmill:main
+    container_name: windmill_server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *windmill-env
+      MODE: server
+    volumes:
+      - worker_logs:/tmp/windmill/logs
+
+  windmill_worker:
+    image: ghcr.io/windmill-labs/windmill:main
+    container_name: windmill_worker_1
+    restart: unless-stopped
+    privileged: true
+    depends_on:
+      db:
+        condition: service_healthy
+      # Attendre le serveur est une bonne pratique, même si pas strictement obligatoire (la DB suffit)
+      windmill_server:
+        condition: service_started
+    environment:
+      <<: *windmill-env
+      MODE: worker
+      WORKER_GROUP: default
+      FAVOR_UNSHARE_PID: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - worker_dependency_cache:/tmp/windmill/cache
+      - worker_logs:/tmp/windmill/logs
+
+volumes:
+  windmill_db_data:
+  worker_dependency_cache:
+  worker_logs:

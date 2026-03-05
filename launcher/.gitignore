@@ -1,0 +1,17 @@
+# Binaires téléchargés par le script d'installation
+TAURI/src-tauri/pgsql/
+TAURI/src-tauri/bin/windmill*
+
+# Dossiers de migration et de transit
+MIGRATION/dump.sql
+MIGRATION/PENDING_MIGRATION
+
+# Caches et dossiers de build
+__pycache__/
+*.tmp
+.venv/
+
+# Caches de développement Tauri (au cas où non couverts par TAURI/.gitignore)
+TAURI/node_modules/
+TAURI/src-tauri/target/
+TAURI/dist/

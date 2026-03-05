@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Windmill Launcher</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Windmill Launcher</h1>
+
+      <div class="status-grid">
+        <div class="status-card">
+          <div class="status-icon">🐘</div>
+          <div class="status-label">PostgreSQL</div>
+          <div class="indicator running" id="pg-status"></div>
+        </div>
+        
+        <div class="status-card">
+          <div class="status-icon">⚙️</div>
+          <div class="status-label">Server</div>
+          <div class="indicator running" id="server-status"></div>
+        </div>
+        
+        <div class="status-card">
+          <div class="status-icon">⚡</div>
+          <div class="status-label">Worker</div>
+          <div class="indicator running" id="worker-status"></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <!-- We will start them automatically, so maybe just a button to open the Web UI -->
+        <button id="open-btn" class="primary">Open Web UI</button>
+        <button id="logs-btn" class="secondary">View Logs (TODO)</button>
+      </div>
+    </div>
+  </body>
+</html>
