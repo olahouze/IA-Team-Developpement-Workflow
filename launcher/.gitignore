@@ -1,17 +1,49 @@
-# Binaires téléchargés par le script d'installation
-TAURI/src-tauri/pgsql/
-TAURI/src-tauri/bin/windmill*
+# Python caches et builds
+__pycache__/
+*.tmp
+.venv/
 
 # Dossiers de migration et de transit
 MIGRATION/dump.sql
 MIGRATION/PENDING_MIGRATION
 
-# Caches et dossiers de build
-__pycache__/
-*.tmp
-.venv/
+# Logs (depuis TAURI)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Caches de développement Tauri (au cas où non couverts par TAURI/.gitignore)
-TAURI/node_modules/
-TAURI/src-tauri/target/
-TAURI/dist/
+# Node (depuis TAURI)
+TAURI/node_modules/*
+!TAURI/node_modules/.gitkeep
+TAURI/dist/*
+!TAURI/dist/.gitkeep
+TAURI/dist-ssr/*
+!TAURI/dist-ssr/.gitkeep
+*.local
+
+# Editor directories and files (depuis TAURI)
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Tauri Binaires / Assets téléchargés
+TAURI/src-tauri/pgsql/*
+!TAURI/src-tauri/pgsql/.gitkeep
+TAURI/src-tauri/bin/*
+!TAURI/src-tauri/bin/.gitkeep
+
+# Cargo / Tauri caches (depuis src-tauri)
+TAURI/src-tauri/target/*
+!TAURI/src-tauri/target/.gitkeep
+TAURI/src-tauri/gen/schemas/*
+!TAURI/src-tauri/gen/schemas/.gitkeep
