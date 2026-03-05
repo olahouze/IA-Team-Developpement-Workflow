@@ -14,11 +14,17 @@ import zipfile
 import tarfile
 import shutil
 import time
+import socket
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TAURI_DIR = os.path.join(BASE_DIR, "TAURI")
 MIGRATION_DIR = os.path.join(BASE_DIR, "MIGRATION")
 PGSQL_DIR = os.path.join(TAURI_DIR, "src-tauri", "pgsql")
+
+# Ports de l'application
+TAURI_PORT = 1420
+WINDMILL_PORT = 8000
+PGSQL_PORT = 5432
 
 PG_URLS = {
     "Windows": "https://get.enterprisedb.com/postgresql/postgresql-17.2-1-windows-x64-binaries.zip",
@@ -52,7 +58,9 @@ def download_and_extract_postgres():
         
     url = PG_URLS[system]
     
-    if os.path.exists(PGSQL_DIR) and os.listdir(PGSQL_DIR):
+    # Verify if postgres is fully extracted by checking the basic bin dir
+    pg_bin_dir = os.path.join(PGSQL_DIR, "bin")
+    if os.path.exists(pg_bin_dir) and os.listdir(pg_bin_dir):
         print("✅ PostgreSQL portable est déjà présent.")
         return
 
@@ -158,7 +166,48 @@ def start_tauri():
     # Pour le dev, on utilise npm. Si on a buildé le binaire on pourrait lancer le .exe
     # Sur pc windows on utilise npm.cmd
     npm_cmd = "npm.cmd" if platform.system() == "Windows" else "npm"
+    
+    # Nettoyage et installation systématique des dépendances NPM
+    print("🧹 Nettoyage du cache NPM...")
+    subprocess.run([npm_cmd, "cache", "clean", "--force"])
+    print("📦 Installation / Mise à jour des dépendances NPM...")
+    subprocess.run([npm_cmd, "install"])
+
     subprocess.run([npm_cmd, "run", "tauri", "dev"])
+
+def check_ports():
+    print("🔍 Vérification des ports...")
+    ports = {
+        "Tauri": TAURI_PORT,
+        "Windmill": WINDMILL_PORT,
+        "PostgreSQL": PGSQL_PORT
+    }
+
+    # 1. Vérifier si les ports sont distincts
+    port_names = {}
+    for name, port in ports.items():
+        if port in port_names:
+            print(f"❌ Impossible de lancer l'application : Le port {port} est configuré pour '{name}' et '{port_names[port]}'.")
+            print("Les ports doivent impérativement être différents. Veuillez modifier les paramètres.")
+            sys.exit(1)
+        port_names[port] = name
+
+    # 2. Vérifier si les ports sont déjà utilisés par un autre programme (hors docker qu'on vient de stopper)
+    in_use = []
+    for name, port in ports.items():
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            # connect_ex renvoie 0 si la connexion réussit (port utilisé)
+            if s.connect_ex(('127.0.0.1', port)) == 0:
+                in_use.append((name, port))
+
+    if in_use:
+        for name, port in in_use:
+            print(f"❌ Erreur critique : Le port {port} (prévu pour {name}) est déjà utilisé par une autre application système.")
+        print("\n➡️ Impossible de démarrer. Veuillez libérer ces ports ou changer leur configuration.")
+        sys.exit(1)
+    
+    print("✅ Configuration des ports vérifiée et validée.")
 
 def main():
     print("=== Native Windmill Launcher ===")
@@ -167,6 +216,7 @@ def main():
     download_and_extract_postgres()
     download_and_install_windmill()
     perform_docker_migration()
+    check_ports()
     start_tauri()
 
 if __name__ == "__main__":

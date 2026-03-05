@@ -150,3 +150,81 @@ button.secondary {
 button.secondary:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+.log-section {
+  margin-top: 30px;
+  text-align: left;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.log-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.log-tab-btn {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 8px 20px;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  flex: 1;
+}
+
+.log-tab-btn.active {
+  background: var(--accent);
+  opacity: 1;
+}
+
+.log-viewport {
+  background: #000;
+  height: 250px;
+  border-radius: 0 0 8px 8px;
+  padding: 15px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.8rem;
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-top: none;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.log-line {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.log-line.error { color: var(--error); }
+.log-line.system { color: #8b5cf6; }
+
+.hidden {
+  display: none !important;
+}
+
+/* Scrollbar styling */
+.log-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log-viewport::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.log-viewport::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.log-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+

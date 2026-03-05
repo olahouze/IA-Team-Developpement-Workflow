@@ -37,33 +37,38 @@ pub fn start_services(app: &AppHandle) -> Result<(Child, tauri_plugin_shell::pro
     let pg_data_dir = app_data_dir.join("pgdata");
 
     // Initialize DB if not exists
-    if !pg_data_dir.exists() {
-        std::fs::create_dir_all(&pg_data_dir).map_err(|e| e.to_string())?;
+    if !pg_data_dir.join("PG_VERSION").exists() {
+        if !pg_data_dir.exists() {
+            std::fs::create_dir_all(&pg_data_dir).map_err(|e| e.to_string())?;
+        }
         
         let status = Command::new(&initdb_exe)
             .arg("-D")
             .arg(&pg_data_dir)
             .arg("-U")
             .arg("postgres")
+            .arg("-E")
+            .arg("UTF8")
+            .arg("--no-locale")
             .arg("--auth=trust")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .status()
             .map_err(|e| format!("Failed to run initdb: {}", e))?;
             
         if !status.success() {
-            return Err("initdb failed".to_string());
+            return Err("initdb failed to initialize the database cluster".to_string());
         }
     }
 
     // Start PostgreSQL
-    let mut pg_child = Command::new(&postgres_exe)
+    let pg_child = Command::new(&postgres_exe)
         .arg("-D")
         .arg(&pg_data_dir)
         .arg("-p")
         .arg("5432")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
         .spawn()
         .map_err(|e| format!("Failed to start PostgreSQL: {}", e))?;
 
@@ -77,7 +82,10 @@ pub fn start_services(app: &AppHandle) -> Result<(Child, tauri_plugin_shell::pro
     if pending_file.exists() {
         if let Ok(dump_path) = std::fs::read_to_string(&pending_file) {
             let dump_path = dump_path.trim();
-            println!("Restoring database from {}...", dump_path);
+            let msg = format!("Restoring database from {}...", dump_path);
+            println!("{}", msg);
+            let _ = app.emit("log-migration", msg);
+            
             let status = Command::new(&psql_exe)
                 .arg("-h").arg("localhost")
                 .arg("-p").arg("5432")
@@ -88,11 +96,15 @@ pub fn start_services(app: &AppHandle) -> Result<(Child, tauri_plugin_shell::pro
                 
             if let Ok(s) = status {
                 if s.success() {
-                    println!("Migration restored successfully.");
+                    let msg = "Migration restored successfully.".to_string();
+                    println!("{}", msg);
+                    let _ = app.emit("log-migration", msg);
                     let _ = std::fs::remove_file(pending_file);
                     let _ = std::fs::remove_file(dump_path);
                 } else {
-                    println!("Failed to restore migration.");
+                    let msg = "Failed to restore migration.".to_string();
+                    println!("{}", msg);
+                    let _ = app.emit("log-migration", msg);
                 }
             }
         }
@@ -110,10 +122,33 @@ pub fn start_services(app: &AppHandle) -> Result<(Child, tauri_plugin_shell::pro
         .map_err(|e| e.to_string())?;
 
     // Log Server output in background
+    let app_h = app.clone();
     tauri::async_runtime::spawn(async move {
         while let Some(event) = rx_server.recv().await {
-            if let CommandEvent::Stdout(line) = event {
-                println!("Windmill Server: {}", String::from_utf8_lossy(&line));
+            match event {
+                CommandEvent::Stdout(line) => {
+                    let text = String::from_utf8_lossy(&line).to_string();
+                    println!("Windmill Server [OUT]: {}", text);
+                    // Detect if it's a migration log
+                    let category = if text.contains("migration") || text.contains("migrating") { "log-migration" } else { "log-app" };
+                    let _ = app_h.emit(category, format!("[Server] {}", text));
+                },
+                CommandEvent::Stderr(line) => {
+                    let text = String::from_utf8_lossy(&line).to_string();
+                    eprintln!("Windmill Server [ERR]: {}", text);
+                    let _ = app_h.emit("log-app", format!("[Server ERR] {}", text));
+                },
+                CommandEvent::Error(err) => {
+                    let msg = format!("Windmill Server [CRITICAL]: {}", err);
+                    eprintln!("{}", msg);
+                    let _ = app_h.emit("log-app", msg);
+                },
+                CommandEvent::Terminated(payload) => {
+                    let msg = format!("Windmill Server [EXIT]: {:?}", payload);
+                    println!("{}", msg);
+                    let _ = app_h.emit("log-app", msg);
+                },
+                _ => {}
             }
         }
     });
@@ -128,10 +163,31 @@ pub fn start_services(app: &AppHandle) -> Result<(Child, tauri_plugin_shell::pro
         .map_err(|e| e.to_string())?;
 
     // Log Worker output in background
+    let app_w = app.clone();
     tauri::async_runtime::spawn(async move {
         while let Some(event) = rx_worker.recv().await {
-            if let CommandEvent::Stdout(line) = event {
-                println!("Windmill Worker: {}", String::from_utf8_lossy(&line));
+            match event {
+                CommandEvent::Stdout(line) => {
+                    let text = String::from_utf8_lossy(&line).to_string();
+                    println!("Windmill Worker [OUT]: {}", text);
+                    let _ = app_w.emit("log-app", format!("[Worker] {}", text));
+                },
+                CommandEvent::Stderr(line) => {
+                    let text = String::from_utf8_lossy(&line).to_string();
+                    eprintln!("Windmill Worker [ERR]: {}", text);
+                    let _ = app_w.emit("log-app", format!("[Worker ERR] {}", text));
+                },
+                CommandEvent::Error(err) => {
+                    let msg = format!("Windmill Worker [CRITICAL]: {}", err);
+                    eprintln!("{}", msg);
+                    let _ = app_w.emit("log-app", msg);
+                },
+                CommandEvent::Terminated(payload) => {
+                    let msg = format!("Windmill Worker [EXIT]: {:?}", payload);
+                    println!("{}", msg);
+                    let _ = app_w.emit("log-app", msg);
+                },
+                _ => {}
             }
         }
     });

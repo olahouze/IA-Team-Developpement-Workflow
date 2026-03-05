@@ -36,7 +36,16 @@
       <div class="actions">
         <!-- We will start them automatically, so maybe just a button to open the Web UI -->
         <button id="open-btn" class="primary">Open Web UI</button>
-        <button id="logs-btn" class="secondary">View Logs (TODO)</button>
+        <button id="logs-btn" class="secondary">View Logs</button>
+      </div>
+
+      <div id="log-section" class="log-section hidden">
+        <div class="log-tabs">
+          <button class="log-tab-btn active" data-tab="migration-logs">Migration</button>
+          <button class="log-tab-btn" data-tab="app-logs">Application</button>
+        </div>
+        <div id="migration-logs" class="log-viewport"></div>
+        <div id="app-logs" class="log-viewport hidden"></div>
       </div>
     </div>
   </body>

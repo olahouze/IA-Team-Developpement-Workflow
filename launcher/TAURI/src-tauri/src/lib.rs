@@ -50,17 +50,17 @@ pub fn run() {
                 // Kill PostgreSQL
                 if let Some(mut pg) = state.pg_process.lock().unwrap().take() {
                     let _ = pg.kill();
-                }
+                };
                 
                 // Kill Windmill Server
                 if let Some(server) = state.windmill_server.lock().unwrap().take() {
                     let _ = server.kill();
-                }
+                };
                 
                 // Kill Windmill Worker
                 if let Some(worker) = state.windmill_worker.lock().unwrap().take() {
                     let _ = worker.kill();
-                }
+                };
             }
             _ => {}
         });
