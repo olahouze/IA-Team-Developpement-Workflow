@@ -1,6 +1,6 @@
 use std::process::{Child, Command, Stdio};
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Emitter};
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_shell::process::CommandEvent;
 
@@ -159,6 +159,7 @@ pub fn start_services(app: &AppHandle) -> Result<(Child, tauri_plugin_shell::pro
         .map_err(|e| e.to_string())?
         .arg("worker")
         .env("DATABASE_URL", database_url)
+        .env("METRICS_ADDR", "0.0.0.0:8002") // Eviter l'erreur 10048 avec le server qui utilise deja le 8001
         .spawn()
         .map_err(|e| e.to_string())?;
 
