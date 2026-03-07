@@ -22,6 +22,26 @@
       ]
     },
     "opener:default",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "bin/windmill",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "bin/windmill",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    },
     "shell:default"
   ]
 }

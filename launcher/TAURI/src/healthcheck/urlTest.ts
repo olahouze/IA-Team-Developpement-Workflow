@@ -1,8 +1,12 @@
+import { invoke } from '@tauri-apps/api/core';
+
+/**
+ * Check URL reachability via Tauri backend command (avoids CORS issues).
+ */
 export async function isUrlReachable(url: string): Promise<boolean> {
     try {
-        const response = await fetch(url, { method: 'GET' });
-        return response.ok || response.status < 500;
-    } catch (error) {
+        return await invoke<boolean>('check_url', { url });
+    } catch {
         return false;
     }
 }

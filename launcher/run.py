@@ -167,9 +167,6 @@ def start_tauri():
     # Sur pc windows on utilise npm.cmd
     npm_cmd = "npm.cmd" if platform.system() == "Windows" else "npm"
     
-    # Nettoyage et installation systématique des dépendances NPM
-    print("🧹 Nettoyage du cache NPM...")
-    subprocess.run([npm_cmd, "cache", "clean", "--force"])
     print("📦 Installation / Mise à jour des dépendances NPM...")
     subprocess.run([npm_cmd, "install"])
 

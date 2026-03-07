@@ -1,7 +1,9 @@
 export function isServerReady(logLine: string): boolean {
-    return logLine.toLowerCase().includes('server running on') ||
-        logLine.toLowerCase().includes('listening on') ||
-        logLine.toLowerCase().includes('windmill server started') ||
-        (logLine.toLowerCase().includes('health check') && !logLine.toLowerCase().includes('no workers alive')) ||
+    const lower = logLine.toLowerCase();
+    return lower.includes('listening on 0.0.0.0:8000') ||
+        lower.includes('server running on') ||
+        lower.includes('windmill server started') ||
+        lower.includes('listening on') ||
+        lower.includes('started server on') ||
         logLine.includes('Running on');
 }

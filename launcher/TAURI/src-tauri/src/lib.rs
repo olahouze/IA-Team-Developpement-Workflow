@@ -5,17 +5,24 @@ use std::sync::Mutex;
 use std::process::Child as StdChild;
 use tauri_plugin_shell::process::CommandChild;
 
-// Structure to hold our running processes
 struct AppState {
     pg_process: Mutex<Option<StdChild>>,
     windmill_server: Mutex<Option<CommandChild>>,
     windmill_worker: Mutex<Option<CommandChild>>,
 }
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+/// Check if a URL is reachable (called from frontend to avoid CORS issues)
+#[tauri::command]
+async fn check_url(url: String) -> Result<bool, String> {
+    match reqwest::get(&url).await {
+        Ok(resp) => Ok(resp.status().is_success() || resp.status().as_u16() < 500),
+        Err(_) => Ok(false),
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -40,7 +47,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![greet, check_url])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|app_handle, event| match event {

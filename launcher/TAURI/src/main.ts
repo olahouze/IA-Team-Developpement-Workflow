@@ -13,7 +13,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (openBtn) {
     openBtn.addEventListener('click', async () => {
-      // Open the Windmill dashboard in the default browser
       try {
         console.log("Tentative d'ouverture de l'URL...");
         await openUrl('http://localhost:8000/');
@@ -38,11 +37,8 @@ window.addEventListener("DOMContentLoaded", () => {
   const tabBtns = document.querySelectorAll('.log-tab-btn');
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      // Deactivate all tabs
       tabBtns.forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.log-viewport').forEach(v => v.classList.add('hidden'));
-
-      // Activate clicked tab
       btn.classList.add('active');
       const targetId = (btn as HTMLElement).dataset.tab;
       if (targetId) {
@@ -56,13 +52,9 @@ window.addEventListener("DOMContentLoaded", () => {
     if (container) {
       const span = document.createElement('div');
       span.className = `log-line${isError ? ' error' : ''}`;
-
-      // Regex to strip ALL ANSI escape codes including formatting
       const cleanMessage = message.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '').trim();
-
       span.textContent = `[${new Date().toLocaleTimeString()}] ${cleanMessage}`;
       container.appendChild(span);
-      // Auto-scroll to bottom
       container.scrollTop = container.scrollHeight;
     }
   };
@@ -77,12 +69,36 @@ window.addEventListener("DOMContentLoaded", () => {
   const setStatusReady = (elementId: string) => {
     const el = document.getElementById(elementId);
     if (el && !el.classList.contains('running')) {
+      el.classList.remove('stopped');
       el.classList.add('running');
     }
   };
 
+  const setStatusError = (elementId: string) => {
+    const el = document.getElementById(elementId);
+    if (el) {
+      el.classList.remove('running');
+      el.classList.add('stopped');
+    }
+  };
+
+  // Map service names to status element IDs
+  const serviceStatusMap: Record<string, string> = {
+    'windmill-server': 'server-status',
+    'windmill-worker': 'worker-status',
+  };
+
+  // Listen for service crash events
+  listen<string>('service-error', (event) => {
+    const elementId = serviceStatusMap[event.payload];
+    if (elementId) {
+      setStatusError(elementId);
+      appendLog('app-logs', `⚠ Service ${event.payload} crashed or exited with error`, true);
+    }
+  });
+
   // Setup periodic URL Reachability test
-  let urlCheckInterval = setInterval(async () => {
+  const urlCheckInterval = setInterval(async () => {
     const isUp = await isUrlReachable('http://localhost:8000/');
     if (isUp) {
       setStatusReady('url-status');
